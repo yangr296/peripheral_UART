@@ -39,7 +39,6 @@ static K_SEM_DEFINE(ble_init_ok, 0, 1);
 LOG_MODULE_REGISTER(mymain, LOG_LEVEL_DBG);
 static struct bt_conn *current_conn;
 static struct bt_conn *auth_conn;
-static struct k_work adv_work;
 
 static K_FIFO_DEFINE(fifo_uart_tx_data);
 static K_FIFO_DEFINE(fifo_uart_rx_data);
@@ -164,14 +163,6 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	}
 }
 
-static bool uart_test_async_api(const struct device *dev)
-{
-	const struct uart_driver_api *api =
-			(const struct uart_driver_api *)dev->api;
-
-	return (api->callback_set != NULL);
-}
-
 static int uart_init(void)
 {
 	int err;
@@ -272,23 +263,6 @@ static int uart_init(void)
 	}
 
 	return err;
-}
-
-static void adv_work_handler(struct k_work *work)
-{
-	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ad_len, sd, sd_len);
-
-	if (err) {
-		LOG_ERR("Advertising failed to start (err %d)", err);
-		return;
-	}
-
-	LOG_INF("Advertising successfully started");
-}
-
-static void advertising_start(void)
-{
-	k_work_submit(&adv_work);
 }
 
 static void connected(struct bt_conn *conn, uint8_t err)

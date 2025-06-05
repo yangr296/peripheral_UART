@@ -32,6 +32,7 @@ UART_ASYNC_ADAPTER_INST_DEFINE(async_adapter);
 
 extern struct k_work_delayable uart_work;
 extern const struct device *uart;
+extern struct k_work adv_work;
 extern const struct bt_data ad[];
 extern const struct bt_data sd[];
 extern const size_t ad_len;
@@ -43,5 +44,7 @@ struct uart_data_t {
 };
 
 void uart_work_handler(struct k_work *item);
-
+bool uart_test_async_api(const struct device *dev);
+void adv_work_handler(struct k_work *work);
+void advertising_start(void);
 #endif

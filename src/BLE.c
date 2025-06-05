@@ -20,6 +20,8 @@ const struct bt_data sd[] = {
 	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_VAL),
 };
 const size_t sd_len = ARRAY_SIZE(sd);
+struct k_work adv_work;
+
 
 void uart_work_handler(struct k_work *item)
 {
@@ -35,4 +37,29 @@ void uart_work_handler(struct k_work *item)
 	}
 
 	uart_rx_enable(uart, buf->data, sizeof(buf->data), UART_WAIT_FOR_RX);
+}
+
+bool uart_test_async_api(const struct device *dev)
+{
+	const struct uart_driver_api *api =
+			(const struct uart_driver_api *)dev->api;
+
+	return (api->callback_set != NULL);
+}
+
+void adv_work_handler(struct k_work *work)
+{
+	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ad_len, sd, sd_len);
+
+	if (err) {
+		LOG_ERR("Advertising failed to start (err %d)", err);
+		return;
+	}
+
+	LOG_INF("Advertising successfully started");
+}
+
+void advertising_start(void)
+{
+	k_work_submit(&adv_work);
 }
