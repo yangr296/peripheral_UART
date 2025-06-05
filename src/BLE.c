@@ -1,10 +1,21 @@
 #include <zephyr/types.h>
 #include <zephyr/device.h>
-#include <zephyr/bluetooth/bluetooth.h>
+
 #include <bluetooth/services/nus.h>
+
+#include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/bluetooth/gatt.h>
+#include <zephyr/bluetooth/hci.h>
+
 #include <zephyr/logging/log.h>
+
+#include <dk_buttons_and_leds.h>
+
+#include <stdio.h>
+#include <string.h>
+
 #include "BLE.h"
 
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
@@ -21,6 +32,8 @@ const struct bt_data sd[] = {
 };
 const size_t sd_len = ARRAY_SIZE(sd);
 struct k_work adv_work;
+struct bt_conn *current_conn;
+struct bt_conn *auth_conn;
 
 
 void uart_work_handler(struct k_work *item)
@@ -62,4 +75,47 @@ void adv_work_handler(struct k_work *work)
 void advertising_start(void)
 {
 	k_work_submit(&adv_work);
+}
+
+void connected(struct bt_conn *conn, uint8_t err)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	if (err) {
+		LOG_ERR("Connection failed, err 0x%02x %s", err, bt_hci_err_to_str(err));
+		return;
+	}
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+	LOG_INF("Connected %s", addr);
+
+	current_conn = bt_conn_ref(conn);
+
+	dk_set_led_on(CON_STATUS_LED);
+}
+
+void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	LOG_INF("Disconnected: %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
+
+	if (auth_conn) {
+		bt_conn_unref(auth_conn);
+		auth_conn = NULL;
+	}
+
+	if (current_conn) {
+		bt_conn_unref(current_conn);
+		current_conn = NULL;
+		dk_set_led_off(CON_STATUS_LED);
+	}
+}
+
+void recycled_cb(void)
+{
+	LOG_INF("Connection object available from previous conn. Disconnect is complete!");
+	advertising_start();
 }

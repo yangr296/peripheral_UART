@@ -37,8 +37,6 @@
 
 static K_SEM_DEFINE(ble_init_ok, 0, 1);
 LOG_MODULE_REGISTER(mymain, LOG_LEVEL_DBG);
-static struct bt_conn *current_conn;
-static struct bt_conn *auth_conn;
 
 static K_FIFO_DEFINE(fifo_uart_tx_data);
 static K_FIFO_DEFINE(fifo_uart_rx_data);
@@ -263,49 +261,6 @@ static int uart_init(void)
 	}
 
 	return err;
-}
-
-static void connected(struct bt_conn *conn, uint8_t err)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	if (err) {
-		LOG_ERR("Connection failed, err 0x%02x %s", err, bt_hci_err_to_str(err));
-		return;
-	}
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	LOG_INF("Connected %s", addr);
-
-	current_conn = bt_conn_ref(conn);
-
-	dk_set_led_on(CON_STATUS_LED);
-}
-
-static void disconnected(struct bt_conn *conn, uint8_t reason)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	LOG_INF("Disconnected: %s, reason 0x%02x %s", addr, reason, bt_hci_err_to_str(reason));
-
-	if (auth_conn) {
-		bt_conn_unref(auth_conn);
-		auth_conn = NULL;
-	}
-
-	if (current_conn) {
-		bt_conn_unref(current_conn);
-		current_conn = NULL;
-		dk_set_led_off(CON_STATUS_LED);
-	}
-}
-
-static void recycled_cb(void)
-{
-	LOG_INF("Connection object available from previous conn. Disconnect is complete!");
-	advertising_start();
 }
 
 #ifdef CONFIG_BT_NUS_SECURITY_ENABLED
