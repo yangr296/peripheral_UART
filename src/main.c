@@ -84,11 +84,15 @@ int main(void)
         IRQ_CONNECT(NRFX_IRQ_NUMBER_GET(NRF_SPIM_INST_GET(SPIM_INST_IDX)), IRQ_PRIO_LOWEST,
                     NRFX_SPIM_INST_HANDLER_GET(SPIM_INST_IDX), 0, 0);
     #endif
-    
+
     init_clock();
     init_misc_pins();
+    spi_init();
+    timer_init();
+    measurement_timer_init();
 	int blink_status = 0;
 	int err = 0;
+    uint32_t experiment_counter = 0;
     
 	configure_gpio();
 
@@ -135,7 +139,22 @@ int main(void)
 
 	for (;;) {
 		dk_set_led(RUN_STATUS_LED, (++blink_status) % 2);
-		k_sleep(K_MSEC(RUN_LED_BLINK_INTERVAL));
+		//k_sleep(K_MSEC(RUN_LED_BLINK_INTERVAL));
+        k_msleep(10000);
+        experiment_counter += 10;
+        error_data my_error_data;
+        get_error_data(&my_error_data);
+        printf("Counter: %i Elapsed: %is\nEvent0 running error: %lu avg error: %lu max error: %lu\nEvents1-3 running error: %lu avg error: %lu max error: %lu, %lu, %lu\n", 
+               my_error_data.mycounter, 
+               experiment_counter,
+               my_error_data.event0_error,
+               (my_error_data.event0_error/my_error_data.mycounter), 
+               my_error_data.event0_max,
+               my_error_data.myerror,
+               (my_error_data.myerror/my_error_data.mycounter),
+               my_error_data.event1_max,
+               my_error_data.event2_max,
+               my_error_data.event3_max);
 	}
 }
 
