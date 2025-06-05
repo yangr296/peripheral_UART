@@ -11,6 +11,8 @@ project(peripheral_uart)
 # NORDIC SDK APP START
 target_sources(app PRIVATE
   src/main.c
+  src/spi.c
+  src/BLE.c
 )
 
 # NORDIC SDK APP END
