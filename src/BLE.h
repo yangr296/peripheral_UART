@@ -30,6 +30,7 @@ UART_ASYNC_ADAPTER_INST_DEFINE(async_adapter);
 #define async_adapter NULL
 #endif // CONFIG_UART_ASYNC_ADAPTER
 
+extern struct k_sem ble_init_ok;
 extern struct k_work_delayable uart_work;
 extern const struct device *uart;
 extern struct k_work adv_work;
@@ -52,6 +53,13 @@ void advertising_start(void);
 void connected(struct bt_conn *conn, uint8_t err);
 void disconnected(struct bt_conn *conn, uint8_t reason);
 void recycled_cb(void);
+void configure_gpio(void);
+void error(void);
+void bt_receive_cb(struct bt_conn *conn, const uint8_t *const data,
+			  uint16_t len);
+void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data);
+int uart_init(void);
+void ble_write_thread(void);
 
 #ifdef CONFIG_BT_NUS_SECURITY_ENABLED
 void security_changed(struct bt_conn *conn, bt_security_t level,
@@ -71,4 +79,10 @@ extern struct bt_conn_auth_cb conn_auth_callbacks;
 extern struct bt_conn_auth_info_cb conn_auth_info_callbacks;
 #endif /* CONFIG_BT_NUS_SECURITY_ENABLED */
 
+#ifdef CONFIG_BT_NUS_SECURITY_ENABLED
+void num_comp_reply(bool accept);
+void button_changed(uint32_t button_state, uint32_t has_changed);
+#endif /* CONFIG_BT_NUS_SECURITY_ENABLED */
+
 #endif /* BLE_H */
+
