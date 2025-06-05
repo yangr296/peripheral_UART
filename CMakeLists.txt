@@ -13,6 +13,7 @@ target_sources(app PRIVATE
   src/main.c
   src/spi.c
   src/BLE.c
+  src/timer.c
 )
 
 # NORDIC SDK APP END
