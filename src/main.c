@@ -35,27 +35,15 @@
 #include <zephyr/logging/log.h>
 #include "BLE.h"
 
-LOG_MODULE_REGISTER(LOG_MODULE_NAME);
-
 static K_SEM_DEFINE(ble_init_ok, 0, 1);
-
+LOG_MODULE_REGISTER(mymain, LOG_LEVEL_DBG);
 static struct bt_conn *current_conn;
 static struct bt_conn *auth_conn;
 static struct k_work adv_work;
 
-static const struct device *uart = DEVICE_DT_GET(DT_CHOSEN(nordic_nus_uart));
-static struct k_work_delayable uart_work;
-
 static K_FIFO_DEFINE(fifo_uart_tx_data);
 static K_FIFO_DEFINE(fifo_uart_rx_data);
-static const struct bt_data ad[] = {
-	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
-};
 
-static const struct bt_data sd[] = {
-	BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_VAL),
-};
 static void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data)
 {
 	ARG_UNUSED(dev);
@@ -176,22 +164,6 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 	}
 }
 
-static void uart_work_handler(struct k_work *item)
-{
-	struct uart_data_t *buf;
-
-	buf = k_malloc(sizeof(*buf));
-	if (buf) {
-		buf->len = 0;
-	} else {
-		LOG_WRN("Not able to allocate UART receive buffer");
-		k_work_reschedule(&uart_work, UART_WAIT_FOR_BUF_DELAY);
-		return;
-	}
-
-	uart_rx_enable(uart, buf->data, sizeof(buf->data), UART_WAIT_FOR_RX);
-}
-
 static bool uart_test_async_api(const struct device *dev)
 {
 	const struct uart_driver_api *api =
@@ -304,7 +276,7 @@ static int uart_init(void)
 
 static void adv_work_handler(struct k_work *work)
 {
-	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+	int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_2, ad, ad_len, sd, sd_len);
 
 	if (err) {
 		LOG_ERR("Advertising failed to start (err %d)", err);
