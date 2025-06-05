@@ -28,7 +28,7 @@
 UART_ASYNC_ADAPTER_INST_DEFINE(async_adapter);
 #else
 #define async_adapter NULL
-#endif
+#endif // CONFIG_UART_ASYNC_ADAPTER
 
 extern struct k_work_delayable uart_work;
 extern const struct device *uart;
@@ -52,4 +52,23 @@ void advertising_start(void);
 void connected(struct bt_conn *conn, uint8_t err);
 void disconnected(struct bt_conn *conn, uint8_t reason);
 void recycled_cb(void);
-#endif
+
+#ifdef CONFIG_BT_NUS_SECURITY_ENABLED
+void security_changed(struct bt_conn *conn, bt_security_t level,
+                 enum bt_security_err err);
+#endif /* CONFIG_BT_NUS_SECURITY_ENABLED */
+
+#if defined(CONFIG_BT_NUS_SECURITY_ENABLED)
+void auth_passkey_display(struct bt_conn *conn, unsigned int passkey);
+void auth_passkey_confirm(struct bt_conn *conn, unsigned int passkey);
+void auth_cancel(struct bt_conn *conn);
+void pairing_complete(struct bt_conn *conn, bool bonded);
+void pairing_failed(struct bt_conn *conn, enum bt_security_err reason);
+extern struct bt_conn_auth_cb conn_auth_callbacks;
+extern struct bt_conn_auth_info_cb conn_auth_info_callbacks;
+#else
+extern struct bt_conn_auth_cb conn_auth_callbacks;
+extern struct bt_conn_auth_info_cb conn_auth_info_callbacks;
+#endif /* CONFIG_BT_NUS_SECURITY_ENABLED */
+
+#endif /* BLE_H */
